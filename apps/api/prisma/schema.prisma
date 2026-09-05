@@ -1,0 +1,196 @@
+// Message store for a 1:1 chat expected to hold 10,000+ messages per conversation.
+//
+// Two decisions drive this schema:
+//
+//   1. IDs are UUIDv7 (generated in application code). They are time-sortable, so
+//      ordering by `id` is ordering by time, and history paginates with a
+//      single-column keyset cursor instead of a (createdAt, id) composite.
+//
+//   2. Read/delivery state lives on ConversationMember as a *cursor*, not as one
+//      receipt row per message per member. Per-message receipts would mean 10k
+//      extra rows per member per conversation to answer "what is unread"; a cursor
+//      answers it with one indexed COUNT.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+// Prisma 7: the connection URL lives in prisma.config.ts (for the CLI) and is
+// passed to PrismaClient as a driver adapter at runtime. See src/prisma/.
+datasource db {
+  provider = "postgresql"
+}
+
+enum ConversationType {
+  DIRECT
+  GROUP
+}
+
+enum MessageKind {
+  TEXT
+  IMAGE
+  GIF
+  STICKER
+}
+
+enum MessageStatus {
+  PENDING // accepted, not yet fanned out (attachment still in moderation)
+  VISIBLE
+  REJECTED // blocked by moderation; never leaves the sender
+}
+
+enum ModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ModerationKind {
+  TEXT
+  IMAGE
+}
+
+model User {
+  id           String   @id @db.Uuid
+  email        String   @unique
+  passwordHash String
+  displayName  String
+  avatarUrl    String?
+  lastSeenAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  memberships   ConversationMember[]
+  messages      Message[]
+  attachments   Attachment[]
+  refreshTokens RefreshToken[]
+  moderation    ModerationEvent[]
+
+  @@map("users")
+}
+
+model Conversation {
+  id   String           @id @db.Uuid
+  type ConversationType @default(DIRECT)
+
+  /// Sorted "<userIdA>:<userIdB>" for DIRECT conversations. The unique constraint
+  /// is what makes "open a chat with X" idempotent: two people racing to start the
+  /// same conversation cannot create two of them.
+  directKey String? @unique
+
+  lastMessageAt DateTime?
+  createdAt     DateTime  @default(now())
+
+  members  ConversationMember[]
+  messages Message[]
+
+  @@index([lastMessageAt(sort: Desc)])
+  @@map("conversations")
+}
+
+model ConversationMember {
+  conversationId String   @db.Uuid
+  userId         String   @db.Uuid
+  joinedAt       DateTime @default(now())
+
+  /// Both cursors advance monotonically only, so a late or out-of-order event can
+  /// never walk read state backwards.
+  lastReadMessageId      String? @db.Uuid
+  lastDeliveredMessageId String? @db.Uuid
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+  /// Conversation list for the signed-in user.
+  @@index([userId])
+  @@map("conversation_members")
+}
+
+model Message {
+  id             String @id @db.Uuid
+  conversationId String @db.Uuid
+  senderId       String @db.Uuid
+
+  /// Client-generated idempotency key. See the unique constraint below.
+  clientMessageId String @db.Uuid
+
+  kind   MessageKind
+  status MessageStatus @default(VISIBLE)
+
+  /// TEXT body. GIF/STICKER payloads live in `meta`; IMAGE points at `attachment`.
+  body String?
+  meta Json?
+
+  attachmentId String? @unique @db.Uuid
+
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  attachment   Attachment?  @relation(fields: [attachmentId], references: [id], onDelete: SetNull)
+
+  /// The idempotency guarantee. A retried send or a reconnect replay collides here
+  /// and returns the existing row instead of creating a duplicate.
+  @@unique([senderId, clientMessageId])
+  /// Serves both history pagination (id < cursor ORDER BY id DESC) and unread
+  /// counts (id > lastReadMessageId), which are the only two hot read paths.
+  @@index([conversationId, id(sort: Desc)])
+  @@map("messages")
+}
+
+model Attachment {
+  id      String @id @db.Uuid
+  ownerId String @db.Uuid
+
+  storageKey   String  @unique
+  thumbnailKey String?
+  mime         String
+  size         Int
+  width        Int?
+  height       Int?
+
+  moderationStatus ModerationStatus @default(PENDING)
+  /// Full class-probability vector from the classifier, kept for auditability.
+  moderationScores Json?
+
+  createdAt DateTime @default(now())
+
+  owner   User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  message Message?
+
+  @@index([ownerId])
+  @@map("attachments")
+}
+
+model ModerationEvent {
+  id        String         @id @db.Uuid
+  userId    String         @db.Uuid
+  kind      ModerationKind
+  blocked   Boolean
+  reason    String?
+  detail    Json?
+  createdAt DateTime       @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("moderation_events")
+}
+
+model RefreshToken {
+  id     String @id @db.Uuid
+  userId String @db.Uuid
+
+  /// SHA-256 of the token. A database leak does not yield usable sessions.
+  tokenHash String   @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}

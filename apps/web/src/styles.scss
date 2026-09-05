@@ -1,0 +1,90 @@
+/* Design tokens. Defined once on :root so light and dark are a token swap
+   rather than parallel component styles. */
+:root {
+  color-scheme: light dark;
+
+  --surface: #ffffff;
+  --surface-sunken: #f4f5f7;
+  --surface-raised: #ffffff;
+  --border: #e3e5e9;
+  --border-strong: #c9ccd3;
+
+  --text: #16181d;
+  --text-muted: #6b7280;
+  --text-faint: #9aa1ad;
+
+  --accent: #3d5afe;
+  --accent-soft: #eef1ff;
+  --accent-text: #ffffff;
+
+  --bubble-in: #f1f2f5;
+  --bubble-out: #3d5afe;
+  --bubble-out-text: #ffffff;
+
+  --danger: #d92d20;
+  --danger-soft: #fef3f2;
+  --success: #12b76a;
+
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 18px;
+
+  --shadow-sm: 0 1px 2px rgb(16 24 40 / 6%);
+  --shadow: 0 4px 16px rgb(16 24 40 / 8%);
+
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: #16181d;
+    --surface-sunken: #101216;
+    --surface-raised: #1d2027;
+    --border: #2a2e37;
+    --border-strong: #3a3f4a;
+
+    --text: #e9eaee;
+    --text-muted: #9aa1ad;
+    --text-faint: #6b7280;
+
+    --accent: #6d83ff;
+    --accent-soft: #22273a;
+
+    --bubble-in: #24272f;
+    --bubble-out: #4a63ff;
+
+    --danger: #f97066;
+    --danger-soft: #2d1a19;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: var(--font);
+  background: var(--surface-sunken);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+button { font: inherit; cursor: pointer; }
+input, textarea { font: inherit; color: inherit; }
+
+/* Visible focus for keyboard users without a ring on every mouse click. */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+:focus:not(:focus-visible) { outline: none; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
