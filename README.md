@@ -5,7 +5,7 @@ server-side moderation, and the database design to back a conversation with
 10,000+ messages in it.
 
 **Stack:** Angular 22 (zoneless, signals) · NestJS 12 · PostgreSQL 17 + Prisma 7 ·
-Socket.IO + Redis · Cloudflare R2 / S3 · TensorFlow.js
+Socket.IO + Redis · S3-compatible object storage · TensorFlow.js
 
 ---
 

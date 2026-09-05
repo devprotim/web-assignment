@@ -42,7 +42,7 @@ services:
       - key: S3_SECRET_ACCESS_KEY
         sync: false
       - key: S3_FORCE_PATH_STYLE
-        value: "false"
+        value: "true"
       - key: S3_PUBLIC_URL
         sync: false
       - key: NSFW_THRESHOLD_PORN
