@@ -18,8 +18,13 @@ COPY apps/web/package.json apps/web/
 RUN npm ci
 
 COPY . .
+# Not "npx prisma": @prisma/client's optional peer dependency on a floating
+# "prisma": "*" range hoists whatever is the current latest dist-tag to the
+# repo root (an 8.0.0-rc.x with a different, incompatible CLI at the time of
+# writing), shadowing the version actually pinned for apps/api. Running the
+# pinned binary directly from that workspace avoids the ambiguity entirely.
 RUN npm run build -w @chat/shared \
- && npx prisma generate --schema apps/api/prisma/schema.prisma \
+ && (cd apps/api && node node_modules/prisma/build/index.js generate) \
  && npm run build -w @chat/api \
  && npm run build -w @chat/web
 
@@ -42,6 +47,9 @@ COPY --from=build /app/apps/api/dist ./apps/api/dist
 COPY --from=build /app/apps/api/package.json ./apps/api/package.json
 COPY --from=build /app/apps/api/prisma ./apps/api/prisma
 COPY --from=build /app/apps/api/prisma.config.ts ./apps/api/prisma.config.ts
+# npm nests its own pinned copy of prisma here (see the build-stage comment
+# above); the root node_modules copy above is not the one to run.
+COPY --from=build /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=build /app/apps/web/dist ./apps/web/dist
 
 # Do not run as root.
@@ -49,4 +57,4 @@ USER node
 EXPOSE 3000
 
 # Migrations run at boot so a deploy needs no separate release step.
-CMD ["sh", "-c", "npx prisma migrate deploy --schema apps/api/prisma/schema.prisma && node apps/api/dist/main.js"]
+CMD ["sh", "-c", "cd apps/api && node node_modules/prisma/build/index.js migrate deploy && cd /app && node apps/api/dist/main.js"]
