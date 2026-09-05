@@ -55,8 +55,8 @@ async function bootstrap(): Promise<void> {
           // injected at runtime, which does need 'unsafe-inline'.
           scriptSrc: ["'self'"],
           styleSrc: ["'self'", "'unsafe-inline'"],
-          imgSrc: ["'self'", 'data:', 'blob:', ...storageOrigins, 'https://*.tenor.com'],
-          mediaSrc: ["'self'", 'data:', 'blob:', ...storageOrigins, 'https://*.tenor.com'],
+          imgSrc: ["'self'", 'data:', 'blob:', ...storageOrigins, 'https://*.klipy.com'],
+          mediaSrc: ["'self'", 'data:', 'blob:', ...storageOrigins, 'https://*.klipy.com'],
           connectSrc: ["'self'", 'ws:', 'wss:', ...storageOrigins],
           frameAncestors: ["'none'"],
           objectSrc: ["'none'"],

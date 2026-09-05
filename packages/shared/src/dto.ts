@@ -35,7 +35,7 @@ export interface PublicUser {
 /* ----------------------------------------------------------- message body */
 
 export const gifMetaSchema = z.object({
-  provider: z.literal('tenor'),
+  provider: z.literal('klipy'),
   id: z.string().max(100),
   url: z.string().url().max(2000),
   previewUrl: z.string().url().max(2000),

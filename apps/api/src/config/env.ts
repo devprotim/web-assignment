@@ -34,7 +34,7 @@ const envSchema = z.object({
   NSFW_THRESHOLD_SEXY: z.coerce.number().min(0).max(1).default(0.85),
   NSFW_THRESHOLD_COMBINED: z.coerce.number().min(0).max(1).default(0.75),
 
-  TENOR_API_KEY: z.string().default(''),
+  KLIPY_API_KEY: z.string().default(''),
 });
 
 export type Env = z.infer<typeof envSchema>;

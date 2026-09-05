@@ -56,9 +56,12 @@ To demo real-time behaviour, sign in as each account in two separate browser
 profiles (or one normal window and one private window — two tabs of the same
 profile share a cookie jar and would be the same account).
 
-The GIF picker needs a free [Tenor API key](https://developers.google.com/tenor/guides/quickstart)
-in `TENOR_API_KEY`. Without one, the picker reports that GIF search is
-unconfigured and the rest of the app is unaffected.
+The GIF picker needs a free [Klipy API key](https://docs.klipy.com/getting-started)
+in `KLIPY_API_KEY`. Without one, the picker reports that GIF search is
+unconfigured and the rest of the app is unaffected. (Klipy, not Tenor: Google
+shut down third-party access to the Tenor API on 2026-06-30. Klipy publishes a
+Tenor-compatible `v2/search`/`v2/featured` proxy, so the integration below is
+unchanged apart from the host and the key.)
 
 ---
 
@@ -390,7 +393,7 @@ transfer at **72.8 kB**.
 
 **Media.** `loading="lazy"` and `decoding="async"`, with a fixed aspect-ratio box
 computed from stored dimensions so images and GIFs cause no layout shift. The GIF
-picker grid requests Tenor's `tinygif` previews, not full-size GIFs.
+picker grid requests Klipy's `tinygif` previews, not full-size GIFs.
 
 **Scroll.** Loading older messages prepends to the list, which would grow the
 container upward and jump the reader's position. The list captures scroll height

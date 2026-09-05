@@ -53,7 +53,7 @@ services:
         value: "0.85"
       - key: NSFW_THRESHOLD_COMBINED
         value: "0.75"
-      - key: TENOR_API_KEY
+      - key: KLIPY_API_KEY
         sync: false
 
   - type: keyvalue

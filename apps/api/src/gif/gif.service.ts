@@ -3,25 +3,28 @@ import { ConfigService } from '@nestjs/config';
 import type { GifMeta, GifSearchInput, GifSearchResult } from '@chat/shared';
 import type { Env } from '../config/env.js';
 
-const TENOR_BASE = 'https://tenor.googleapis.com/v2';
+// Klipy publishes a Tenor-compatible v2/search + v2/featured pair for exactly
+// this migration (Tenor cut off third-party access on 2026-06-30), so only the
+// host and the API key change; the query params and response shape are the same.
+const KLIPY_BASE = 'https://api.klipy.com/v2';
 
-interface TenorMediaFormat {
+interface KlipyMediaFormat {
   url: string;
   dims: [number, number];
 }
 
-interface TenorResult {
+interface KlipyResult {
   id: string;
-  media_formats: Record<string, TenorMediaFormat | undefined>;
+  media_formats: Record<string, KlipyMediaFormat | undefined>;
 }
 
-interface TenorResponse {
-  results?: TenorResult[];
+interface KlipyResponse {
+  results?: KlipyResult[];
   next?: string;
 }
 
 /**
- * Tenor proxy.
+ * Klipy GIF proxy.
  *
  * Proxied rather than called from the browser for two reasons: the API key stays
  * on the server instead of being shipped in the bundle where anyone can lift it
@@ -35,7 +38,7 @@ export class GifService {
   constructor(private readonly config: ConfigService<Env, true>) {}
 
   private get apiKey(): string {
-    return this.config.get('TENOR_API_KEY', { infer: true });
+    return this.config.get('KLIPY_API_KEY', { infer: true });
   }
 
   get isConfigured(): boolean {
@@ -46,7 +49,7 @@ export class GifService {
     if (!this.isConfigured) {
       throw new ServiceUnavailableException({
         code: 'GIF_NOT_CONFIGURED',
-        message: 'GIF search is unavailable because no Tenor API key is configured.',
+        message: 'GIF search is unavailable because no Klipy API key is configured.',
       });
     }
 
@@ -55,8 +58,7 @@ export class GifService {
     const params = new URLSearchParams({
       key: this.apiKey,
       limit: String(input.limit),
-      client_key: 'chat_web_assignment',
-      // Tenor's own content filter, on top of it being a curated library.
+      // Klipy's own content filter, on top of it being a curated library.
       contentfilter: 'medium',
       // Only ask for the formats actually rendered, so responses stay small.
       media_filter: 'tinygif,gif,gifpreview',
@@ -66,11 +68,11 @@ export class GifService {
 
     let response: Response;
     try {
-      response = await fetch(`${TENOR_BASE}/${endpoint}?${params}`, {
+      response = await fetch(`${KLIPY_BASE}/${endpoint}?${params}`, {
         signal: AbortSignal.timeout(8000),
       });
     } catch (error) {
-      this.logger.warn(`Tenor request failed: ${(error as Error).message}`);
+      this.logger.warn(`Klipy request failed: ${(error as Error).message}`);
       throw new ServiceUnavailableException({
         code: 'GIF_UPSTREAM_ERROR',
         message: 'GIF search is temporarily unavailable.',
@@ -78,14 +80,14 @@ export class GifService {
     }
 
     if (!response.ok) {
-      this.logger.warn(`Tenor responded ${response.status}`);
+      this.logger.warn(`Klipy responded ${response.status}`);
       throw new ServiceUnavailableException({
         code: 'GIF_UPSTREAM_ERROR',
         message: 'GIF search is temporarily unavailable.',
       });
     }
 
-    const body = (await response.json()) as TenorResponse;
+    const body = (await response.json()) as KlipyResponse;
     return {
       items: (body.results ?? []).flatMap((result) => toGifMeta(result) ?? []),
       nextCursor: body.next && body.next.length > 0 ? body.next : null,
@@ -94,17 +96,17 @@ export class GifService {
 }
 
 /**
- * The picker grid renders `previewUrl` (Tenor's `tinygif`, typically tens of KB)
+ * The picker grid renders `previewUrl` (Klipy's `tinygif`, typically tens of KB)
  * and only the full `gif` once one is actually sent. Loading full-size GIFs into
  * a grid of 24 is what makes a picker feel slow.
  */
-function toGifMeta(result: TenorResult): GifMeta | null {
+function toGifMeta(result: KlipyResult): GifMeta | null {
   const full = result.media_formats.gif;
   const preview = result.media_formats.tinygif ?? result.media_formats.gifpreview ?? full;
   if (!full || !preview) return null;
 
   return {
-    provider: 'tenor',
+    provider: 'klipy',
     id: result.id,
     url: full.url,
     previewUrl: preview.url,

@@ -28,7 +28,7 @@ import { firstValueFrom } from 'rxjs';
         <div class="grid">
           @for (gif of items(); track gif.id) {
             <button type="button" (click)="selected.emit(gif)">
-              <!-- The grid renders Tenor's tiny preview, not the full GIF.
+              <!-- The grid renders Klipy's tiny preview, not the full GIF.
                    24 full-size GIFs is what makes a picker feel heavy. -->
               <img
                 [src]="gif.previewUrl"
@@ -41,6 +41,8 @@ import { firstValueFrom } from 'rxjs';
           }
         </div>
       }
+
+      <a class="attribution" href="https://klipy.com" target="_blank" rel="noopener">Powered by KLIPY</a>
     </div>
   `,
   styles: `
@@ -73,6 +75,7 @@ import { firstValueFrom } from 'rxjs';
     button { padding: 0; border: none; background: none; border-radius: var(--radius-sm); overflow: hidden; }
     img { display: block; width: 100%; height: auto; background: var(--surface-sunken); }
     .notice { margin: auto; color: var(--text-muted); font-size: 13px; text-align: center; padding: 0 12px; }
+    .attribution { align-self: center; font-size: 11px; color: var(--text-muted); text-decoration: none; }
   `,
 })
 export class GifPickerComponent {
