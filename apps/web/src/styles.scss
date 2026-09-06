@@ -1,7 +1,6 @@
-/* Design tokens. Defined once on :root so light and dark are a token swap
-   rather than parallel component styles. */
+/* Design tokens, light mode only. */
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
 
   --surface: #ffffff;
   --surface-sunken: #f4f5f7;
@@ -33,29 +32,6 @@
   --shadow: 0 4px 16px rgb(16 24 40 / 8%);
 
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --surface: #16181d;
-    --surface-sunken: #101216;
-    --surface-raised: #1d2027;
-    --border: #2a2e37;
-    --border-strong: #3a3f4a;
-
-    --text: #e9eaee;
-    --text-muted: #9aa1ad;
-    --text-faint: #6b7280;
-
-    --accent: #6d83ff;
-    --accent-soft: #22273a;
-
-    --bubble-in: #24272f;
-    --bubble-out: #4a63ff;
-
-    --danger: #f97066;
-    --danger-soft: #2d1a19;
-  }
 }
 
 * { box-sizing: border-box; }
