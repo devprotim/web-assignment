@@ -1,5 +1,13 @@
 import { HttpClient } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, effect, inject, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  output,
+  signal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import type { GifMeta, GifSearchResult } from '@chat/shared';
 import { firstValueFrom } from 'rxjs';
@@ -26,18 +34,22 @@ import { firstValueFrom } from 'rxjs';
         <p class="notice">Nothing found.</p>
       } @else {
         <div class="grid">
-          @for (gif of items(); track gif.id) {
-            <button type="button" (click)="selected.emit(gif)">
-              <!-- The grid renders Klipy's tiny preview, not the full GIF.
-                   24 full-size GIFs is what makes a picker feel heavy. -->
-              <img
-                [src]="gif.previewUrl"
-                [style.aspect-ratio]="gif.width + ' / ' + gif.height"
-                loading="lazy"
-                decoding="async"
-                alt="GIF result"
-              />
-            </button>
+          @for (column of columns(); track $index) {
+            <div class="column">
+              @for (gif of column; track gif.id) {
+                <button type="button" (click)="selected.emit(gif)">
+                  <!-- The grid renders Klipy's tiny preview, not the full GIF.
+                       24 full-size GIFs is what makes a picker feel heavy. -->
+                  <img
+                    [src]="gif.previewUrl"
+                    [style.aspect-ratio]="gif.width + ' / ' + gif.height"
+                    loading="lazy"
+                    decoding="async"
+                    alt="GIF result"
+                  />
+                </button>
+              }
+            </div>
           }
         </div>
       }
@@ -67,12 +79,27 @@ import { firstValueFrom } from 'rxjs';
     .grid {
       flex: 1;
       overflow-y: auto;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
+      overflow-x: hidden;
+      display: flex;
       gap: 6px;
-      align-content: start;
+      align-items: flex-start;
     }
-    button { padding: 0; border: none; background: none; border-radius: var(--radius-sm); overflow: hidden; }
+    .column {
+      flex: 1 1 0;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    button {
+      display: block;
+      width: 100%;
+      padding: 0;
+      border: none;
+      background: none;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
     img { display: block; width: 100%; height: auto; background: var(--surface-sunken); }
     .notice { margin: auto; color: var(--text-muted); font-size: 13px; text-align: center; padding: 0 12px; }
     .attribution { align-self: center; font-size: 11px; color: var(--text-muted); text-decoration: none; }
@@ -87,6 +114,25 @@ export class GifPickerComponent {
   readonly items = signal<GifMeta[]>([]);
   readonly loading = signal(false);
   readonly error = signal('');
+
+  private static readonly COLUMN_COUNT = 2;
+
+  // Greedily assigns each GIF to whichever column is currently shortest, using
+  // its aspect ratio to estimate rendered height (columns share equal width).
+  // Keeps the masonry columns close to even instead of a naive round-robin.
+  readonly columns = computed(() => {
+    const columns: GifMeta[][] = Array.from({ length: GifPickerComponent.COLUMN_COUNT }, () => []);
+    const heights = new Array<number>(GifPickerComponent.COLUMN_COUNT).fill(0);
+    for (const gif of this.items()) {
+      let shortest = 0;
+      for (let i = 1; i < heights.length; i++) {
+        if (heights[i] < heights[shortest]) shortest = i;
+      }
+      columns[shortest].push(gif);
+      heights[shortest] += gif.height / gif.width;
+    }
+    return columns;
+  });
 
   constructor() {
     // Debounced so a type-ahead does not fire a request per keystroke, which
