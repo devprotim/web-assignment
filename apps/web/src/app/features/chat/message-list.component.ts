@@ -113,7 +113,11 @@ export class MessageListComponent {
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     this.pinnedToBottom = distanceFromBottom < MessageListComponent.FOLLOW_THRESHOLD;
 
-    if (this.pinnedToBottom) this.store.markActiveRead();
+    // Same rule as every other read-marking path: being scrolled to the
+    // newest message is not the same as having actually looked at it. A new
+    // message arriving auto-scrolls the pinned-to-bottom viewport, which
+    // fires this handler even in a background, unfocused window/tab.
+    if (this.pinnedToBottom && document.hasFocus()) this.store.markActiveRead();
 
     // Near the top: pull the next older page and hold the viewport still.
     if (el.scrollTop < 200) void this.loadOlderPreservingPosition();
