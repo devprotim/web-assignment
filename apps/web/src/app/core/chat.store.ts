@@ -141,7 +141,11 @@ export class ChatStore {
     if (!this.byConversation()[conversationId]) {
       await this.loadHistory(conversationId);
     }
-    this.markActiveRead();
+    // Consistent with onIncoming(): read is only true once the window actually
+    // has focus. Opening a conversation from an unfocused tab must not mark it
+    // read; the `window.addEventListener('focus', ...)` listener catches that
+    // case once the user actually looks at it.
+    if (document.hasFocus()) this.markActiveRead();
   }
 
   /** Loads the newest page, or the next older one when `before` is supplied. */
