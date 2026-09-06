@@ -48,14 +48,6 @@ import { AuthService } from '../../core/auth.service';
         <button class="link" type="button" (click)="toggle()">
           {{ mode() === 'login' ? 'Need an account? Register' : 'Already registered? Sign in' }}
         </button>
-
-        <aside class="demo">
-          <p>Demo accounts, both with password <code>demo-password-123</code></p>
-          <div>
-            <button type="button" (click)="fill('alice@demo.chat')">alice&#64;demo.chat</button>
-            <button type="button" (click)="fill('bob@demo.chat')">bob&#64;demo.chat</button>
-          </div>
-        </aside>
       </section>
     </main>
   `,
@@ -114,24 +106,6 @@ import { AuthService } from '../../core/auth.service';
       color: var(--accent);
       font-size: 14px;
     }
-    .demo {
-      margin-top: 24px;
-      padding-top: 20px;
-      border-top: 1px solid var(--border);
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-    .demo p { margin: 0 0 10px; }
-    .demo div { display: flex; gap: 8px; }
-    .demo button {
-      flex: 1;
-      padding: 7px;
-      border: 1px solid var(--border-strong);
-      border-radius: var(--radius-sm);
-      background: var(--surface-sunken);
-      font-size: 12px;
-    }
-    code { font-size: 12px; background: var(--surface-sunken); padding: 1px 5px; border-radius: 4px; }
   `,
 })
 export class LoginPage {
@@ -149,12 +123,6 @@ export class LoginPage {
   toggle(): void {
     this.mode.update((m) => (m === 'login' ? 'register' : 'login'));
     this.error.set('');
-  }
-
-  fill(email: string): void {
-    this.mode.set('login');
-    this.email = email;
-    this.password = 'demo-password-123';
   }
 
   async submit(): Promise<void> {
