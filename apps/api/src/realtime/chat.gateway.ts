@@ -155,6 +155,17 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     }
   }
 
+  /**
+   * Presence is scored by last-heartbeat, so a socket that never refreshes its
+   * score gets pruned as stale after SOCKET_TTL_SECONDS even while it is still
+   * connected. This is what keeps a long-open tab from silently reading back as
+   * offline (and last-seen stuck in the past) on the next presence lookup.
+   */
+  @SubscribeMessage(SOCKET_EVENTS.PRESENCE_HEARTBEAT)
+  async onPresenceHeartbeat(@ConnectedSocket() socket: ChatSocket): Promise<void> {
+    await this.presence.heartbeat(socket.data.userId, socket.id);
+  }
+
   @SubscribeMessage(SOCKET_EVENTS.TYPING_START)
   async onTypingStart(
     @ConnectedSocket() socket: ChatSocket,

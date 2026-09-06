@@ -16,6 +16,7 @@ export const SOCKET_EVENTS = {
   RECEIPT_DELIVERED: 'receipt:delivered',
   CONVERSATION_SUBSCRIBE: 'conversation:subscribe',
   CONVERSATION_UNSUBSCRIBE: 'conversation:unsubscribe',
+  PRESENCE_HEARTBEAT: 'presence:heartbeat',
 
   // server -> client
   MESSAGE_NEW: 'message:new',
@@ -68,6 +69,7 @@ export interface ClientToServerEvents {
     ack: (res: Ack<{ subscribed: true }>) => void,
   ) => void;
   [SOCKET_EVENTS.CONVERSATION_UNSUBSCRIBE]: (payload: { conversationId: string }) => void;
+  [SOCKET_EVENTS.PRESENCE_HEARTBEAT]: () => void;
 }
 
 export interface ServerToClientEvents {

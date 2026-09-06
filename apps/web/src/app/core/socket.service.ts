@@ -14,9 +14,16 @@ import { io, type Socket } from 'socket.io-client';
 
 export type ConnectionState = 'connecting' | 'connected' | 'disconnected';
 
+/**
+ * Well under the server's SOCKET_TTL_SECONDS (60s), so a socket's presence
+ * entry never goes stale between heartbeats even if one is delayed.
+ */
+const HEARTBEAT_INTERVAL_MS = 20_000;
+
 @Injectable({ providedIn: 'root' })
 export class SocketService {
   private socket: Socket | null = null;
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 
   private readonly connection = signal<ConnectionState>('disconnected');
   readonly state = this.connection.asReadonly();
@@ -57,8 +64,12 @@ export class SocketService {
       this.connection.set('connected');
       if (hadConnected) this.reconnected$.next();
       hadConnected = true;
+      this.startHeartbeat();
     });
-    this.socket.on('disconnect', () => this.connection.set('disconnected'));
+    this.socket.on('disconnect', () => {
+      this.connection.set('disconnected');
+      this.stopHeartbeat();
+    });
     this.socket.on('connect_error', () => this.connection.set('disconnected'));
 
     this.socket.on(SOCKET_EVENTS.MESSAGE_NEW, (m: MessageView) => this.messages$.next(m));
@@ -75,9 +86,24 @@ export class SocketService {
   }
 
   disconnect(): void {
+    this.stopHeartbeat();
     this.socket?.disconnect();
     this.socket = null;
     this.connection.set('disconnected');
+  }
+
+  private startHeartbeat(): void {
+    this.stopHeartbeat();
+    this.heartbeatTimer = setInterval(() => {
+      this.socket?.emit(SOCKET_EVENTS.PRESENCE_HEARTBEAT);
+    }, HEARTBEAT_INTERVAL_MS);
+  }
+
+  private stopHeartbeat(): void {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
   }
 
   /** Resolves with the server's ack, or an error ack if the socket is down. */
