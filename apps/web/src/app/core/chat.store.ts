@@ -104,6 +104,19 @@ export class ChatStore {
       );
     });
 
+    // A conversation this client has never fetched (someone messaging this
+    // account for the first time) has no entry to bump in `conversationList`,
+    // so it would otherwise stay invisible until the next full reload.
+    this.socket.conversations$.subscribe((conversation) => {
+      this.conversationList.update((list) => {
+        const exists = list.some((c) => c.id === conversation.id);
+        const next = exists
+          ? list.map((c) => (c.id === conversation.id ? conversation : c))
+          : [...list, conversation];
+        return [...next].sort((a, b) => (b.lastMessageAt ?? '').localeCompare(a.lastMessageAt ?? ''));
+      });
+    });
+
     this.socket.readReceipts$.subscribe(({ conversationId, userId, messageId }) =>
       this.advanceCursor(conversationId, userId, messageId, 'read'),
     );
