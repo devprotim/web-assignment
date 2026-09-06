@@ -1,5 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 import type { ConversationView, PublicUser } from '@chat/shared';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../../core/auth.service';
@@ -237,6 +246,10 @@ export class ChatPage {
   readonly store = inject(ChatStore);
   readonly socket = inject(SocketService);
   private readonly http = inject(HttpClient);
+  private readonly router = inject(Router);
+
+  /** Bound to the ?c=<id> query param via withComponentInputBinding(). */
+  readonly c = input<string | undefined>(undefined);
 
   readonly showDirectory = signal(false);
   readonly directory = signal<PublicUser[]>([]);
@@ -255,6 +268,14 @@ export class ChatPage {
     // Coming back to the tab marks what is on screen as read, which is what a
     // user expects after glancing at a notification and returning.
     window.addEventListener('focus', () => this.store.markActiveRead());
+
+    // The ?c= query param is the source of truth for which conversation is
+    // open, so a reload or a shared /chat?c=<id> link reopens the same one
+    // instead of landing on the bare list.
+    effect(() => {
+      const id = this.c();
+      if (id && id !== this.store.activeId()) void this.store.openConversation(id);
+    });
   }
 
   other(conversation: ConversationView) {
@@ -291,11 +312,12 @@ export class ChatPage {
   }
 
   open(conversationId: string): void {
-    void this.store.openConversation(conversationId);
+    void this.router.navigate(['/chat'], { queryParams: { c: conversationId } });
   }
 
   close(): void {
     this.store.closeConversation();
+    void this.router.navigate(['/chat'], { queryParams: { c: null } });
   }
 
   async toggleDirectory(): Promise<void> {
@@ -314,6 +336,6 @@ export class ChatPage {
     );
     await this.store.loadConversations();
     this.showDirectory.set(false);
-    this.open(conversation.id);
+    void this.router.navigate(['/chat'], { queryParams: { c: conversation.id } });
   }
 }

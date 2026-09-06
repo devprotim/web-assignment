@@ -10,6 +10,9 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/login.page').then((m) => m.LoginPage),
   },
   {
+    // Which conversation is open lives in a query param (?c=<id>) rather than
+    // a path segment, so switching conversations stays on this one route
+    // config and Angular reuses the component instead of remounting it.
     path: 'chat',
     canActivate: [authGuard],
     loadComponent: () => import('./features/chat/chat.page').then((m) => m.ChatPage),
