@@ -200,6 +200,12 @@ import { MessageListComponent } from './message-list.component';
     .empty { padding: 16px; color: var(--text-faint); font-size: 13px; }
 
     .thread { display: grid; grid-template-rows: auto auto 1fr auto; min-height: 0; min-width: 0; overflow: hidden; }
+    /* Explicit rows so the grid stays stable when the offline banner (row 2)
+       is removed from the DOM by @if rather than merely hidden. */
+    .thread-head { grid-row: 1; }
+    .offline { grid-row: 2; }
+    app-message-list { grid-row: 3; min-height: 0; }
+    app-composer { grid-row: 4; }
     .thread-head {
       display: flex; align-items: center; gap: 10px;
       padding: 12px 16px; border-bottom: 1px solid var(--border);

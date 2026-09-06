@@ -110,11 +110,11 @@ import { ChatStore, type LocalMessage } from '../../core/chat.store';
       gap: 5px;
       margin-top: 2px;
       font-size: 11px;
-      opacity: 0.75;
     }
+    footer time { opacity: 0.75; }
     .bubble.media footer { padding-right: 6px; }
-    .tick { letter-spacing: -2px; }
-    .tick.read { color: #9fe8ff; }
+    .tick { letter-spacing: -2px; opacity: 0.75; }
+    .tick.read { opacity: 1; color: #34b7f1; }
     .bubble:not(.mine) .tick.read { color: var(--accent); }
     .error { margin: 3px 16px 0; font-size: 12px; color: var(--danger); }
   `,
